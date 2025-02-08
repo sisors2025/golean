@@ -93,6 +93,7 @@ export interface CustomTheme {
   preview?: ContentfulAsset;
 }
 
+// Update the LandingPage interface to include dynamicPages
 export interface LandingPage {
   internalName: string;
   favicon?: ContentfulAsset;
@@ -104,8 +105,26 @@ export interface LandingPage {
   googleTagManager?: string;
   valeiaChat?: boolean;
   sections: Array<ContentfulEntry<any>>;
+  dynamicPages?: Array<ContentfulEntry<DynamicPage>>;
   isVisible: boolean;
   sys: ContentfulSys;
+}
+
+// Update the DynamicPage interface
+export interface DynamicPage {
+  title: string;
+  seoDescription?: string;
+  slug: string;
+  content: any;
+  featuredImage?: ContentfulAsset;
+  isVisible: boolean;
+  label?: string;
+  location: "header" | "footer" | "blog" | "legal" | null;
+  author?: string;
+  publishDate?: string;
+  tags?: string[];
+  parentLandingSlug?: string;
+  sys?: ContentfulSys;
 }
 
 export interface HeaderSection {
@@ -228,6 +247,31 @@ export interface UseCasesSection {
   isVisible: boolean;
 }
 
+export interface LeadMagnet {
+  title: string;
+  description: any; // Rich text
+  image: ContentfulAsset;
+  imagePosition?: "right" | "left";
+  imageFit?: "Ajustar" | "Rellenar" | "Expandir";
+  features?: string[];
+  ctaText: string;
+}
+
+export interface LeadMagnetSection {
+  title: string;
+  subtitle: string;
+  leadMagnets: ContentfulEntry<LeadMagnet>[];
+  titleModal: string;
+  subtitleModal: string;
+  ctaTextModal: string;
+  fieldsToCapture: string[];
+  submitEndpoint: string;
+  confirmationTitle: string;
+  confirmationMessage: string;
+  backgroundColor?: string;
+  isVisible: boolean;
+}
+
 export interface FAQ {
   question?: string;
   answer?: string;
@@ -287,17 +331,4 @@ interface RichTextContent {
     nodeType: string;
   }>;
   nodeType: string;
-}
-
-export interface DynamicPage {
-  title: string;
-  slug: string;
-  content: any;
-  featuredImage?: ContentfulAsset;
-  isVisible: boolean;
-  label?: string;
-  location: "header" | "footer" | "blog" | "legal" | null;
-  author?: string;
-  publishDate?: string;
-  tags?: string[];
 }
