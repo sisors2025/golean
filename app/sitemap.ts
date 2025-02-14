@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (landingFields.slug !== "/") {
         // Add landing page
         routes.push({
-          url: `${baseUrl}/${landingFields.slug}`.replace(/\/+/g, "/"),
+          url: new URL(landingFields.slug, baseUrl).toString(),
           lastModified: landing.sys.updatedAt,
           changeFrequency: "weekly",
           priority: 0.9,
@@ -52,7 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           landingFields.dynamicPages.forEach((page: any) => {
             if (page.fields.isVisible) {
               routes.push({
-                url: new URL(landingFields.slug, baseUrl).toString(),
+                url: new URL(
+                  `${landingFields.slug}/${page.fields.slug}`,
+                  baseUrl
+                ).toString(),
                 lastModified: page.sys.updatedAt,
                 changeFrequency: "weekly",
                 priority: 0.8,
@@ -74,11 +77,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       )
       .forEach((page) => {
         let url = page.parentLandingSlug
-          ? `${baseUrl}/${page.parentLandingSlug}/${page.slug}`
-          : `${baseUrl}/${page.slug}`;
+          ? `${page.parentLandingSlug}/${page.slug}`
+          : page.slug;
 
         routes.push({
-          url: url.replace(/\/+/g, "/"),
+          url: new URL(url, baseUrl).toString(),
           lastModified: new Date(),
           changeFrequency: "weekly",
           priority: 0.8,
@@ -90,7 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((page) => page.isVisible && page.location === "legal")
       .forEach((page) => {
         routes.push({
-          url: `${baseUrl}/${page.slug}`.replace(/\/+/g, "/"),
+          url: new URL(page.slug, baseUrl).toString(),
           lastModified: new Date(),
           changeFrequency: "monthly",
           priority: 0.5,
@@ -102,7 +105,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Add main blog page
     routes.push({
-      url: `${baseUrl}/blog`,
+      url: new URL("blog", baseUrl).toString(),
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
@@ -111,7 +114,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Add individual blog posts
     blogResponse.blogs?.forEach((post) => {
       routes.push({
-        url: `${baseUrl}/blog/${post.slug}`.replace(/\/+/g, "/"),
+        url: new URL(`blog/${post.slug}`, baseUrl).toString(),
         lastModified: post.publishDate || new Date(),
         changeFrequency: "monthly",
         priority: 0.7,
