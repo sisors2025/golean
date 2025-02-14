@@ -52,10 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           landingFields.dynamicPages.forEach((page: any) => {
             if (page.fields.isVisible) {
               routes.push({
-                url: `${baseUrl}/${landingFields.slug}/${page.fields.slug}`.replace(
-                  /\/+/g,
-                  "/"
-                ),
+                url: new URL(landingFields.slug, baseUrl).toString(),
                 lastModified: page.sys.updatedAt,
                 changeFrequency: "weekly",
                 priority: 0.8,
