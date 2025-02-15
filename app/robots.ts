@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
+import { getLandingPage, getNavigationPages } from "@/lib/contentful";
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
   const domain = process.env.NEXT_PUBLIC_DOMAIN;
 
   try {
