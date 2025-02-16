@@ -2,13 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { BenefitsSection } from "@/types/contentful";
-import { Button } from "./ui/button";
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
-import { getTargetHref, handleSectionScroll } from "@/lib/scroll-utils";
+import { getTargetHref } from "@/lib/scroll-utils";
+import { SectionLink } from "./ui/section-link";
 
 interface BenefitsProps {
   content: BenefitsSection;
@@ -209,64 +209,45 @@ export function Benefits({ content }: BenefitsProps) {
                           )}
                       </div>
                       {/* CTA Buttons */}
-                      {(benefit.fields.ctaText ||
-                        benefit.fields.secondaryCtaText) && (
-                        <div className="flex flex-wrap gap-4 pt-4">
-                          {(benefit.fields.ctaText && benefit.fields.ctaUrl) ||
-                            (benefit.fields.ctaSection && (
-                              <Button
-                                asChild
-                                style={
-                                  accentColor
-                                    ? { backgroundColor: accentColor }
-                                    : undefined
-                                }
-                                className="w-full md:w-auto"
-                              >
-                                <Link
-                                  href={getTargetHref(
-                                    benefit.fields.ctaSection,
-                                    benefit.fields.ctaUrl
-                                  )}
-                                  onClick={(e) =>
-                                    handleSectionScroll(
-                                      e,
-                                      benefit.fields.ctaSection,
-                                      benefit.fields.ctaUrl
-                                    )
-                                  }
-                                >
-                                  {benefit.fields.ctaText}
-                                </Link>
-                              </Button>
-                            ))}
-                          {(benefit.fields.secondaryCtaText &&
-                            benefit.fields.secondaryCtaUrl) ||
-                            (benefit.fields.ctaSection && (
-                              <Button
-                                variant="outline"
-                                asChild
-                                className="w-full md:w-auto"
-                              >
-                                <Link
+                      {benefit.fields.ctaText &&
+                        (benefit.fields.ctaUrl ||
+                          benefit.fields.ctaSection) && (
+                          <div className="flex flex-wrap gap-4 pt-4">
+                            <SectionLink
+                              href={getTargetHref(
+                                benefit.fields.ctaSection,
+                                benefit.fields.ctaUrl
+                              )}
+                              ctaSection={benefit.fields.ctaSection}
+                              ctaUrl={benefit.fields.ctaUrl}
+                              style={
+                                accentColor
+                                  ? { backgroundColor: accentColor }
+                                  : undefined
+                              }
+                              className="w-full md:w-auto"
+                            >
+                              {benefit.fields.ctaText}
+                            </SectionLink>
+
+                            {benefit.fields.secondaryCtaText &&
+                              (benefit.fields.secondaryCtaUrl ||
+                                benefit.fields.ctaSection) && (
+                                <SectionLink
                                   href={getTargetHref(
                                     benefit.fields.ctaSection,
                                     benefit.fields.secondaryCtaUrl
                                   )}
-                                  onClick={(e) =>
-                                    handleSectionScroll(
-                                      e,
-                                      benefit.fields.ctaSection,
-                                      benefit.fields.secondaryCtaUrl
-                                    )
-                                  }
+                                  ctaSection={benefit.fields.ctaSection}
+                                  ctaUrl={benefit.fields.secondaryCtaUrl}
+                                  variant="outline"
+                                  className="w-full md:w-auto"
                                 >
                                   {benefit.fields.secondaryCtaText}
-                                </Link>
-                              </Button>
-                            ))}
-                        </div>
-                      )}
+                                </SectionLink>
+                              )}
+                          </div>
+                        )}
                     </div>
                     {/* Image Side */}
                     {hasImage && (
