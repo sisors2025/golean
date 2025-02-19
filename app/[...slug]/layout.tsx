@@ -242,6 +242,7 @@ export default async function RootLayout({
           {children}
         </ThemeProvider>
         {valeiaChat && <Script src="chat-widget.es.js" />}
+        <Script src="dlocal.js" />
       </body>
     </html>
   );
