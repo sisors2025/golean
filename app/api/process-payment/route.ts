@@ -4,7 +4,7 @@ import { createClient } from "contentful";
 export async function POST(request: NextRequest) {
   try {
     const reqBody = await request.json();
-    const { planId, couponCode, discount } = reqBody;
+    const { planId, couponCode, couponsEndpoint } = reqBody;
 
     // Inicializar cliente de Contentful
     const client = createClient({
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener la configuración de la API desde Contentful
-    const apiConfig = plan.apiConnection; // Asumiendo que tienes un campo de referencia llamado "apiConnection"
+    const apiConfig = plan.apiConnection.fields; // Acceder a los campos del ConnectAPI
     if (!apiConfig) {
       return NextResponse.json(
         { error: "Configuración de API no encontrada" },
@@ -36,9 +36,7 @@ export async function POST(request: NextRequest) {
     let finalAmount = extractPriceInfo(plan.price).amount;
     let appliedDiscount = 0;
 
-    if (couponCode === "HAS_COUPON" && discount > 0) {
-      // Obtener el endpoint de cupones de la sección de precios
-      const couponsEndpoint = plan.couponsEndpoint;
+    if (couponCode && couponCode !== "") {
       if (!couponsEndpoint) {
         return NextResponse.json(
           { error: "Endpoint de cupones no configurado" },
@@ -47,8 +45,8 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const couponUrl =
-          couponsEndpoint + "?coupon=" + couponCode + "&amount=" + finalAmount;
+        const couponUrl = `${couponsEndpoint}?coupon=${couponCode}&action=apply-coupon`;
+
         const couponResponse = await fetch(couponUrl, {
           method: "GET",
           headers: {
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
         const couponData = await couponResponse.json();
 
         if (couponData.valid) {
-          appliedDiscount = couponData.discount;
+          appliedDiscount = couponData.discount * 100;
           finalAmount = finalAmount - (finalAmount * appliedDiscount) / 100;
         } else {
           return NextResponse.json(
@@ -79,12 +77,91 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Construir la URL de redirección
-    const redirectUrl = plan.payLink; // URL base del plan
-    const currency = extractPriceInfo(plan.price).currency;
+    console.log("Monto final:", finalAmount);
+    console.log("Descuento aplicado:", appliedDiscount);
 
-    // Devolver la URL de redirección al frontend
-    return NextResponse.json({ redirectUrl: redirectUrl }, { status: 200 });
+    // Construir el cuerpo de la solicitud para dLocal
+    const date = new Date();
+    const formattedDate = `${date.getDate().toString().padStart(2, "0")}-${(
+      date.getMonth() + 1
+    )
+      .toString()
+      .padStart(
+        2,
+        "0"
+      )}-${date.getFullYear()}-${date.getHours().toString().padStart(2, "0")}`;
+
+    const planFinal = plan.name
+      .replace(/\s+/g, "")
+      .replace(/\./g, "")
+      .slice(0, 10); // Sin espacios ni puntos
+    const amountInt = Math.floor(finalAmount).toString(); // Solo la parte entera del monto
+    const randomStr = Math.random()
+      .toString(36)
+      .replace(/\./g, "")
+      .substring(6, 12); // 6 caracteres sin puntos
+
+    const orderId = `${planFinal}-${formattedDate}-${amountInt}-${randomStr}`;
+
+    const requestBody = {
+      amount: finalAmount,
+      currency: extractPriceInfo(plan.price).currency,
+      order_id: orderId,
+    };
+
+    // Configurar los encabezados de autorización
+    const apiKey = apiConfig.apiKey || process.env.DLOCAL_API_KEY; // Obtener la clave de la API de las variables de entorno si no está proporcionada en la configuración de Contentful como pruebas.
+    const secretKey = apiConfig.secretKey || process.env.DLOCAL_SECRET_KEY; // Obtener la clave secreta de las variables de entorno si no está proporcionada en la configuración de Contentful como pruebas.
+    const authHeader = `Bearer ${apiKey}:${secretKey}`;
+
+    // Llamar a la API de dLocal
+    try {
+      const dlocalResponse = await fetch(
+        apiConfig.apiEndpoint.endsWith("v1/payments")
+          ? apiConfig.apiEndpoint
+          : apiConfig.apiEndpoint + "v1/payments",
+        {
+          method: apiConfig.httpMethod,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!dlocalResponse.ok) {
+        const errorData = await dlocalResponse.json();
+        console.error("dLocal API error:", errorData);
+        return NextResponse.json(
+          { error: "Error al procesar el pago con dLocal" },
+          { status: 500 }
+        );
+      }
+
+      const dlocalData = await dlocalResponse.json();
+
+      // Extraer la URL de redirección desde la respuesta de dLocal
+      const redirectUrl = dlocalData.redirect_url; // Ajusta esto según la respuesta de dLocal
+
+      if (!redirectUrl) {
+        return NextResponse.json(
+          {
+            error: "URL de redirección no encontrada en la respuesta de dLocal",
+          },
+          { status: 500 }
+        );
+      }
+
+      // Devolver la URL de redirección al frontend
+      return NextResponse.json({ redirectUrl: redirectUrl }, { status: 200 });
+    } catch (dlocalError) {
+      console.error("Error al llamar a la API de dLocal:", dlocalError);
+      return NextResponse.json(
+        { error: "Error al llamar a la API de dLocal" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error en la API Route:", error);
     return NextResponse.json(
